@@ -157,6 +157,37 @@
             0% { transform: scaleY(0.3); }
             100% { transform: scaleY(1); }
         }
+
+        /* Beat-reactive elements */
+        .beat-bounce {
+            transition: transform 0.1s ease-out;
+        }
+        .beat-active .beat-bounce {
+            animation: none;
+        }
+        .beat-glow {
+            transition: filter 0.1s ease-out, transform 0.1s ease-out;
+        }
+        .floating-shape {
+            transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+        }
+        .beat-pulse {
+            transition: transform 0.08s ease-out;
+        }
+
+        /* Screen flash on heavy beats */
+        .beat-flash {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(circle at center, rgba(244, 63, 94, 0.15) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.1s ease-out;
+            z-index: 1;
+        }
+        .beat-flash.flash {
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="bg-[#faf9f6]">
@@ -165,8 +196,11 @@
         <source src="birthday.mp3" type="audio/mpeg">
     </audio>
 
+    <!-- Beat Flash Overlay -->
+    <div id="beatFlash" class="beat-flash"></div>
+
     <!-- Music Control Button -->
-    <button id="musicBtn" onclick="toggleMusic()" class="music-btn fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-white/80 backdrop-blur-md shadow-lg border border-white/50 flex items-center justify-center text-rose-500 hover:text-rose-600">
+    <button id="musicBtn" onclick="toggleMusic()" class="music-btn beat-pulse fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-white/80 backdrop-blur-md shadow-lg border border-white/50 flex items-center justify-center text-rose-500 hover:text-rose-600">
         <div id="musicIcon" class="music-bars">
             <div class="music-bar"></div>
             <div class="music-bar"></div>
@@ -205,7 +239,7 @@
                 </div>
 
                 <div class="interactive mb-8 block">
-                    <h1 class="serif text-6xl md:text-9xl font-bold text-slate-800 leading-[0.9] mb-4 animate-fade-in-up delay-300">
+                    <h1 id="mainTitle" class="serif text-6xl md:text-9xl font-bold text-slate-800 leading-[0.9] mb-4 animate-fade-in-up delay-300 beat-bounce">
                         Shantel<br>
                         <span class="text-rose-500 italic">McNeal</span>
                     </h1>
@@ -352,14 +386,109 @@
         const music = document.getElementById('birthdayMusic');
         const musicBtn = document.getElementById('musicBtn');
         const musicIcon = document.getElementById('musicIcon');
+        const beatFlash = document.getElementById('beatFlash');
         let isPlaying = false;
+
+        // Audio Analysis for beat detection
+        let audioContext = null;
+        let analyser = null;
+        let dataArray = null;
+        let isAudioSetup = false;
+
+        function setupAudioAnalyser() {
+            if (isAudioSetup) return;
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                const source = audioContext.createMediaElementSource(music);
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
+                analyser.fftSize = 256;
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                isAudioSetup = true;
+                animateBeat();
+            } catch (e) {
+                console.log('Audio analysis not supported:', e);
+            }
+        }
+
+        // Beat-reactive elements
+        const floatingShapes = document.querySelectorAll('.floating-shape');
+        const mainTitle = document.getElementById('mainTitle');
+        const wishCards = document.querySelectorAll('.wish-card');
+        let lastBassHit = 0;
+
+        function animateBeat() {
+            if (!isPlaying || !analyser) {
+                requestAnimationFrame(animateBeat);
+                return;
+            }
+
+            analyser.getByteFrequencyData(dataArray);
+
+            // Get bass frequencies (first few bins) - this is where the beat lives in "In Da Club"
+            const bass = (dataArray[0] + dataArray[1] + dataArray[2] + dataArray[3]) / 4;
+            // Get mid frequencies for additional effects
+            const mid = (dataArray[8] + dataArray[9] + dataArray[10] + dataArray[11]) / 4;
+            // Overall energy
+            const overall = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+
+            // Normalize values (0-1)
+            const bassNorm = bass / 255;
+            const midNorm = mid / 255;
+            const overallNorm = overall / 255;
+
+            // Main title bounce on bass
+            if (mainTitle) {
+                const scale = 1 + (bassNorm * 0.08);
+                mainTitle.style.transform = `scale(${scale})`;
+            }
+
+            // Floating shapes react to different frequencies
+            floatingShapes.forEach((shape, i) => {
+                const freq = i % 2 === 0 ? bassNorm : midNorm;
+                const scale = 1 + (freq * 0.15);
+                const extraY = freq * -10;
+                shape.style.transform = `translateY(${extraY}px) scale(${scale})`;
+                shape.style.opacity = 0.3 + (freq * 0.3);
+            });
+
+            // Wish cards pulse
+            wishCards.forEach((card, i) => {
+                const delay = i * 0.05;
+                const freq = midNorm;
+                const scale = 1 + (freq * 0.03);
+                card.style.transform = `scale(${scale})`;
+            });
+
+            // Music button pulses
+            const btnScale = 1 + (bassNorm * 0.1);
+            musicBtn.style.transform = `scale(${btnScale})`;
+
+            // Screen flash on strong bass hits
+            const now = Date.now();
+            if (bass > 200 && now - lastBassHit > 150) {
+                beatFlash.classList.add('flash');
+                lastBassHit = now;
+                setTimeout(() => beatFlash.classList.remove('flash'), 100);
+            }
+
+            requestAnimationFrame(animateBeat);
+        }
 
         function playMusic() {
             if (!isPlaying) {
+                // Setup audio analyser on first play
+                setupAudioAnalyser();
+                if (audioContext && audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+
                 music.play().then(() => {
                     isPlaying = true;
                     musicBtn.classList.remove('needs-interaction');
                     musicIcon.classList.add('music-playing');
+                    document.body.classList.add('beat-active');
                 }).catch(() => {
                     // Autoplay blocked, show pulse to indicate tap needed
                     musicBtn.classList.add('needs-interaction');
@@ -372,11 +501,22 @@
                 music.pause();
                 isPlaying = false;
                 musicIcon.classList.remove('music-playing');
+                document.body.classList.remove('beat-active');
+                // Reset transforms
+                if (mainTitle) mainTitle.style.transform = '';
+                floatingShapes.forEach(s => s.style.transform = '');
+                wishCards.forEach(c => c.style.transform = '');
+                musicBtn.style.transform = '';
             } else {
+                setupAudioAnalyser();
+                if (audioContext && audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
                 music.play().then(() => {
                     isPlaying = true;
                     musicBtn.classList.remove('needs-interaction');
                     musicIcon.classList.add('music-playing');
+                    document.body.classList.add('beat-active');
                 }).catch(e => console.log('Playback failed:', e));
             }
         }
