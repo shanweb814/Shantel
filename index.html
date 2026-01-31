@@ -120,9 +120,61 @@
         .wish-card:nth-child(2) { animation-delay: 0.4s; }
         .wish-card:nth-child(3) { animation-delay: 0.5s; }
         .wish-card:nth-child(4) { animation-delay: 0.6s; }
+
+        /* Music button */
+        .music-btn {
+            transition: all 0.3s ease;
+        }
+        .music-btn:hover {
+            transform: scale(1.1);
+        }
+        .music-btn.needs-interaction {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4); }
+            50% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(244, 63, 94, 0); }
+        }
+        .music-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 16px;
+        }
+        .music-bar {
+            width: 3px;
+            background: currentColor;
+            border-radius: 2px;
+        }
+        .music-playing .music-bar {
+            animation: soundBars 0.5s ease-in-out infinite alternate;
+        }
+        .music-bar:nth-child(1) { height: 40%; animation-delay: 0s; }
+        .music-bar:nth-child(2) { height: 70%; animation-delay: 0.1s; }
+        .music-bar:nth-child(3) { height: 50%; animation-delay: 0.2s; }
+        .music-bar:nth-child(4) { height: 80%; animation-delay: 0.3s; }
+        @keyframes soundBars {
+            0% { transform: scaleY(0.3); }
+            100% { transform: scaleY(1); }
+        }
     </style>
 </head>
 <body class="bg-[#faf9f6]">
+    <!-- Birthday Music -->
+    <audio id="birthdayMusic" loop preload="auto">
+        <source src="birthday.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Music Control Button -->
+    <button id="musicBtn" onclick="toggleMusic()" class="music-btn fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-white/80 backdrop-blur-md shadow-lg border border-white/50 flex items-center justify-center text-rose-500 hover:text-rose-600">
+        <div id="musicIcon" class="music-bars">
+            <div class="music-bar"></div>
+            <div class="music-bar"></div>
+            <div class="music-bar"></div>
+            <div class="music-bar"></div>
+        </div>
+    </button>
+
     <!-- Background Decoration -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div class="absolute inset-0 bg-gradient-to-br from-[#faf9f6] via-rose-50/30 to-amber-50/20"></div>
@@ -296,8 +348,44 @@
     </div>
 
     <script>
+        // Music Control
+        const music = document.getElementById('birthdayMusic');
+        const musicBtn = document.getElementById('musicBtn');
+        const musicIcon = document.getElementById('musicIcon');
+        let isPlaying = false;
+
+        function playMusic() {
+            if (!isPlaying) {
+                music.play().then(() => {
+                    isPlaying = true;
+                    musicBtn.classList.remove('needs-interaction');
+                    musicIcon.classList.add('music-playing');
+                }).catch(() => {
+                    // Autoplay blocked, show pulse to indicate tap needed
+                    musicBtn.classList.add('needs-interaction');
+                });
+            }
+        }
+
+        function toggleMusic() {
+            if (isPlaying) {
+                music.pause();
+                isPlaying = false;
+                musicIcon.classList.remove('music-playing');
+            } else {
+                music.play().then(() => {
+                    isPlaying = true;
+                    musicBtn.classList.remove('needs-interaction');
+                    musicIcon.classList.add('music-playing');
+                }).catch(e => console.log('Playback failed:', e));
+            }
+        }
+
         // Page Navigation
         function navigateTo(page) {
+            // Try to play music on first navigation (user interaction)
+            playMusic();
+
             const pages = document.querySelectorAll('.page');
             pages.forEach(p => {
                 p.classList.remove('active');
@@ -452,9 +540,18 @@
             animate();
         })();
 
-        // Initial confetti on page load
+        // Initial confetti and try autoplay on page load
         document.addEventListener('DOMContentLoaded', function() {
             triggerConfetti();
+
+            // Try to autoplay music (will likely fail on mobile, but worth trying)
+            music.play().then(() => {
+                isPlaying = true;
+                musicIcon.classList.add('music-playing');
+            }).catch(() => {
+                // Autoplay blocked - show pulse animation to indicate tap needed
+                musicBtn.classList.add('needs-interaction');
+            });
         });
     </script>
 </body>
