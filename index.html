@@ -458,13 +458,20 @@
         const musicIcon = document.getElementById('musicIcon');
         const beatFlash = document.getElementById('beatFlash');
         let isPlaying = false;
+        let lastToggleTime = 0;
 
-        // Add touch event for music button (better for mobile)
-        musicBtn.addEventListener('click', toggleMusic);
-        musicBtn.addEventListener('touchend', function(e) {
-            e.preventDefault();
+        // Debounced toggle to prevent double-firing on mobile
+        function handleMusicToggle(e) {
+            if (e) e.preventDefault();
+            const now = Date.now();
+            if (now - lastToggleTime < 300) return; // Debounce 300ms
+            lastToggleTime = now;
             toggleMusic();
-        }, { passive: false });
+        }
+
+        // Add event listeners for music button
+        musicBtn.addEventListener('click', handleMusicToggle);
+        musicBtn.addEventListener('touchend', handleMusicToggle, { passive: false });
 
         // Audio Analysis for beat detection
         let audioContext = null;
@@ -596,6 +603,16 @@
         }
 
         function toggleMusic() {
+            console.log('Toggle music called, isPlaying:', isPlaying);
+
+            // Setup audio context if not already done
+            if (!audioContext) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    audioContext = new AudioContext();
+                }
+            }
+
             // Resume audio context on any interaction (iOS requirement)
             if (audioContext && audioContext.state === 'suspended') {
                 audioContext.resume();
@@ -612,22 +629,32 @@
                 wishCards.forEach(c => c.style.transform = '');
                 musicBtn.style.transform = '';
             } else {
-                setupAudioAnalyser();
+                console.log('Attempting to play music...');
 
-                // iOS: reload if needed
-                if (isIOS && music.readyState < 2) {
+                // Load the audio file first on mobile
+                if (isMobile) {
                     music.load();
                 }
 
-                const playPromise = music.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        isPlaying = true;
-                        musicBtn.classList.remove('needs-interaction');
-                        musicIcon.classList.add('music-playing');
-                        document.body.classList.add('beat-active');
-                    }).catch(e => console.log('Playback failed:', e));
-                }
+                // Small delay to ensure load is processed
+                setTimeout(() => {
+                    setupAudioAnalyser();
+
+                    const playPromise = music.play();
+                    if (playPromise !== undefined) {
+                        playPromise.then(() => {
+                            console.log('Music playing successfully!');
+                            isPlaying = true;
+                            musicBtn.classList.remove('needs-interaction');
+                            musicIcon.classList.add('music-playing');
+                            document.body.classList.add('beat-active');
+                        }).catch(e => {
+                            console.log('Playback failed:', e);
+                            // Show error state
+                            musicBtn.classList.add('needs-interaction');
+                        });
+                    }
+                }, isMobile ? 100 : 0);
             }
         }
 
