@@ -458,20 +458,32 @@
         const musicIcon = document.getElementById('musicIcon');
         const beatFlash = document.getElementById('beatFlash');
         let isPlaying = false;
-        let lastToggleTime = 0;
 
-        // Debounced toggle to prevent double-firing on mobile
-        function handleMusicToggle(e) {
-            if (e) e.preventDefault();
-            const now = Date.now();
-            if (now - lastToggleTime < 300) return; // Debounce 300ms
-            lastToggleTime = now;
-            toggleMusic();
+        // Simple toggle function for music
+        function toggleMusic() {
+            if (isPlaying) {
+                music.pause();
+                isPlaying = false;
+                musicIcon.classList.remove('music-playing');
+                musicBtn.classList.add('needs-interaction');
+                document.body.classList.remove('beat-active');
+            } else {
+                // Try to play
+                music.play().then(() => {
+                    isPlaying = true;
+                    musicIcon.classList.add('music-playing');
+                    musicBtn.classList.remove('needs-interaction');
+                    document.body.classList.add('beat-active');
+                    setupAudioAnalyser();
+                }).catch(err => {
+                    console.log('Play failed:', err);
+                    alert('Tap the screen first, then tap the music button!');
+                });
+            }
         }
 
-        // Add event listeners for music button
-        musicBtn.addEventListener('click', handleMusicToggle);
-        musicBtn.addEventListener('touchend', handleMusicToggle, { passive: false });
+        // Add click handler to music button
+        musicBtn.onclick = toggleMusic;
 
         // Audio Analysis for beat detection
         let audioContext = null;
@@ -572,90 +584,17 @@
         }
 
         function playMusic() {
-            if (!isPlaying) {
-                // Setup audio analyser on first play (needs user gesture on iOS)
+            if (isPlaying) return;
+
+            music.play().then(() => {
+                isPlaying = true;
+                musicIcon.classList.add('music-playing');
+                musicBtn.classList.remove('needs-interaction');
+                document.body.classList.add('beat-active');
                 setupAudioAnalyser();
-
-                // Resume audio context if suspended (required for iOS)
-                if (audioContext && audioContext.state === 'suspended') {
-                    audioContext.resume();
-                }
-
-                // iOS hack: load the audio first
-                if (isIOS) {
-                    music.load();
-                }
-
-                const playPromise = music.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        isPlaying = true;
-                        musicBtn.classList.remove('needs-interaction');
-                        musicIcon.classList.add('music-playing');
-                        document.body.classList.add('beat-active');
-                    }).catch((e) => {
-                        console.log('Autoplay blocked:', e);
-                        // Autoplay blocked, show pulse to indicate tap needed
-                        musicBtn.classList.add('needs-interaction');
-                    });
-                }
-            }
-        }
-
-        function toggleMusic() {
-            console.log('Toggle music called, isPlaying:', isPlaying);
-
-            // Setup audio context if not already done
-            if (!audioContext) {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (AudioContext) {
-                    audioContext = new AudioContext();
-                }
-            }
-
-            // Resume audio context on any interaction (iOS requirement)
-            if (audioContext && audioContext.state === 'suspended') {
-                audioContext.resume();
-            }
-
-            if (isPlaying) {
-                music.pause();
-                isPlaying = false;
-                musicIcon.classList.remove('music-playing');
-                document.body.classList.remove('beat-active');
-                // Reset transforms
-                if (mainTitle) mainTitle.style.transform = '';
-                floatingShapes.forEach(s => s.style.transform = '');
-                wishCards.forEach(c => c.style.transform = '');
-                musicBtn.style.transform = '';
-            } else {
-                console.log('Attempting to play music...');
-
-                // Load the audio file first on mobile
-                if (isMobile) {
-                    music.load();
-                }
-
-                // Small delay to ensure load is processed
-                setTimeout(() => {
-                    setupAudioAnalyser();
-
-                    const playPromise = music.play();
-                    if (playPromise !== undefined) {
-                        playPromise.then(() => {
-                            console.log('Music playing successfully!');
-                            isPlaying = true;
-                            musicBtn.classList.remove('needs-interaction');
-                            musicIcon.classList.add('music-playing');
-                            document.body.classList.add('beat-active');
-                        }).catch(e => {
-                            console.log('Playback failed:', e);
-                            // Show error state
-                            musicBtn.classList.add('needs-interaction');
-                        });
-                    }
-                }, isMobile ? 100 : 0);
-            }
+            }).catch(err => {
+                console.log('Play failed:', err);
+            });
         }
 
         // Page Navigation
@@ -818,64 +757,23 @@
             animate();
         })();
 
-        // Initial confetti and try autoplay on page load
+        // Initial setup on page load
         document.addEventListener('DOMContentLoaded', function() {
             triggerConfetti();
-
-            // On mobile, always show the pulse indicator since autoplay won't work
-            if (isMobile) {
-                musicBtn.classList.add('needs-interaction');
-            } else {
-                // Try to autoplay music on desktop
-                const playPromise = music.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        setupAudioAnalyser();
-                        isPlaying = true;
-                        musicIcon.classList.add('music-playing');
-                        document.body.classList.add('beat-active');
-                    }).catch(() => {
-                        // Autoplay blocked - show pulse animation to indicate tap needed
-                        musicBtn.classList.add('needs-interaction');
-                    });
-                }
-            }
+            // Always show the pulse indicator to prompt user to tap
+            musicBtn.classList.add('needs-interaction');
         });
 
-        // Unlock audio on first touch (iOS requirement)
-        let audioUnlocked = false;
-        function unlockAudio() {
-            if (audioUnlocked) return;
-
-            // Create and play a silent buffer to unlock audio
-            if (!audioContext) {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                audioContext = new AudioContext();
-            }
-
-            if (audioContext.state === 'suspended') {
-                audioContext.resume();
-            }
-
-            // Also "touch" the audio element
+        // Unlock audio on first user interaction (required for mobile)
+        document.addEventListener('click', function initAudio() {
             music.load();
+            document.removeEventListener('click', initAudio);
+        }, { once: true });
 
-            audioUnlocked = true;
-        }
-
-        // Listen for first interaction to unlock audio
-        document.addEventListener('touchstart', unlockAudio, { once: true });
-        document.addEventListener('touchend', unlockAudio, { once: true });
-        document.addEventListener('click', unlockAudio, { once: true });
-
-        // Prevent pull-to-refresh on mobile
-        document.body.addEventListener('touchmove', function(e) {
-            if (e.target.closest('.page')) {
-                // Allow scrolling within pages
-            } else {
-                e.preventDefault();
-            }
-        }, { passive: false });
+        document.addEventListener('touchstart', function initAudioTouch() {
+            music.load();
+            document.removeEventListener('touchstart', initAudioTouch);
+        }, { once: true });
     </script>
 </body>
 </html>
