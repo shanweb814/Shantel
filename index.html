@@ -2,17 +2,39 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#faf9f6">
+    <meta name="format-detection" content="telephone=no">
     <title>Happy Birthday Shantel!</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.4/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Inter:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
     <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+        }
+        html {
+            height: 100%;
+            height: -webkit-fill-available;
+        }
         body {
             font-family: 'Inter', sans-serif;
             overflow: hidden;
             margin: 0;
             padding: 0;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            /* Safe areas for notched phones */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+            overscroll-behavior: none;
+            -webkit-overflow-scrolling: touch;
         }
         .cursive {
             font-family: 'Dancing Script', cursive;
@@ -22,8 +44,36 @@
         }
         .glass {
             background: rgba(255, 255, 255, 0.7);
+            -webkit-backdrop-filter: blur(12px);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* Mobile-friendly touch targets */
+        button {
+            min-height: 44px;
+            touch-action: manipulation;
+        }
+
+        /* Disable hover effects on touch devices */
+        @media (hover: none) and (pointer: coarse) {
+            .interactive:hover {
+                transform: none;
+            }
+            .music-btn:hover {
+                transform: none;
+            }
+        }
+
+        /* Mobile responsive adjustments */
+        @media screen and (max-width: 640px) {
+            .page {
+                overflow-y: auto;
+                overflow-x: hidden;
+                -webkit-overflow-scrolling: touch;
+                max-height: 100vh;
+                max-height: calc(var(--vh, 1vh) * 100);
+            }
         }
 
         /* Page transitions */
@@ -124,9 +174,14 @@
         /* Music button */
         .music-btn {
             transition: all 0.3s ease;
+            /* Safe area for bottom of phone */
+            bottom: calc(1.5rem + env(safe-area-inset-bottom));
+            right: calc(1.5rem + env(safe-area-inset-right));
         }
-        .music-btn:hover {
-            transform: scale(1.1);
+        @media (hover: hover) {
+            .music-btn:hover {
+                transform: scale(1.1);
+            }
         }
         .music-btn.needs-interaction {
             animation: pulse 2s ease-in-out infinite;
@@ -192,7 +247,7 @@
 </head>
 <body class="bg-[#faf9f6]">
     <!-- Birthday Music -->
-    <audio id="birthdayMusic" loop preload="auto">
+    <audio id="birthdayMusic" loop preload="auto" playsinline webkit-playsinline>
         <source src="birthday.mp3" type="audio/mpeg">
     </audio>
 
@@ -200,7 +255,7 @@
     <div id="beatFlash" class="beat-flash"></div>
 
     <!-- Music Control Button -->
-    <button id="musicBtn" onclick="toggleMusic()" class="music-btn beat-pulse fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-white/80 backdrop-blur-md shadow-lg border border-white/50 flex items-center justify-center text-rose-500 hover:text-rose-600">
+    <button id="musicBtn" class="music-btn beat-pulse fixed z-50 w-16 h-16 rounded-full bg-white/90 backdrop-blur-md shadow-lg border border-white/50 flex items-center justify-center text-rose-500 active:scale-95 active:bg-white">
         <div id="musicIcon" class="music-bars">
             <div class="music-bar"></div>
             <div class="music-bar"></div>
@@ -376,12 +431,27 @@
         </div>
 
         <!-- Footer -->
-        <div class="absolute bottom-6 left-6 text-slate-400 text-[10px] font-semibold uppercase tracking-[0.3em] pointer-events-none">
+        <div class="absolute text-slate-400 text-[10px] font-semibold uppercase tracking-[0.3em] pointer-events-none hidden md:block" style="bottom: calc(1.5rem + env(safe-area-inset-bottom)); left: calc(1.5rem + env(safe-area-inset-left));">
             Exclusively Crafted for Shantel McNeal
         </div>
     </div>
 
     <script>
+        // Mobile viewport height fix (for iOS Safari address bar)
+        function setVH() {
+            let vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        }
+        setVH();
+        window.addEventListener('resize', setVH);
+        window.addEventListener('orientationchange', () => {
+            setTimeout(setVH, 100);
+        });
+
+        // Detect mobile device
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
         // Music Control
         const music = document.getElementById('birthdayMusic');
         const musicBtn = document.getElementById('musicBtn');
@@ -389,19 +459,35 @@
         const beatFlash = document.getElementById('beatFlash');
         let isPlaying = false;
 
+        // Add touch event for music button (better for mobile)
+        musicBtn.addEventListener('click', toggleMusic);
+        musicBtn.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            toggleMusic();
+        }, { passive: false });
+
         // Audio Analysis for beat detection
         let audioContext = null;
         let analyser = null;
         let dataArray = null;
         let isAudioSetup = false;
+        let audioSource = null;
 
         function setupAudioAnalyser() {
             if (isAudioSetup) return;
             try {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                // Create audio context (iOS requires webkit prefix)
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioContext = new AudioContext();
+
+                // iOS requires resuming context after user gesture
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+
                 analyser = audioContext.createAnalyser();
-                const source = audioContext.createMediaElementSource(music);
-                source.connect(analyser);
+                audioSource = audioContext.createMediaElementSource(music);
+                audioSource.connect(analyser);
                 analyser.connect(audioContext.destination);
                 analyser.fftSize = 256;
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
@@ -409,6 +495,8 @@
                 animateBeat();
             } catch (e) {
                 console.log('Audio analysis not supported:', e);
+                // Still allow music to play even if analysis fails
+                isAudioSetup = true;
             }
         }
 
@@ -478,25 +566,41 @@
 
         function playMusic() {
             if (!isPlaying) {
-                // Setup audio analyser on first play
+                // Setup audio analyser on first play (needs user gesture on iOS)
                 setupAudioAnalyser();
+
+                // Resume audio context if suspended (required for iOS)
                 if (audioContext && audioContext.state === 'suspended') {
                     audioContext.resume();
                 }
 
-                music.play().then(() => {
-                    isPlaying = true;
-                    musicBtn.classList.remove('needs-interaction');
-                    musicIcon.classList.add('music-playing');
-                    document.body.classList.add('beat-active');
-                }).catch(() => {
-                    // Autoplay blocked, show pulse to indicate tap needed
-                    musicBtn.classList.add('needs-interaction');
-                });
+                // iOS hack: load the audio first
+                if (isIOS) {
+                    music.load();
+                }
+
+                const playPromise = music.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        isPlaying = true;
+                        musicBtn.classList.remove('needs-interaction');
+                        musicIcon.classList.add('music-playing');
+                        document.body.classList.add('beat-active');
+                    }).catch((e) => {
+                        console.log('Autoplay blocked:', e);
+                        // Autoplay blocked, show pulse to indicate tap needed
+                        musicBtn.classList.add('needs-interaction');
+                    });
+                }
             }
         }
 
         function toggleMusic() {
+            // Resume audio context on any interaction (iOS requirement)
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
             if (isPlaying) {
                 music.pause();
                 isPlaying = false;
@@ -509,15 +613,21 @@
                 musicBtn.style.transform = '';
             } else {
                 setupAudioAnalyser();
-                if (audioContext && audioContext.state === 'suspended') {
-                    audioContext.resume();
+
+                // iOS: reload if needed
+                if (isIOS && music.readyState < 2) {
+                    music.load();
                 }
-                music.play().then(() => {
-                    isPlaying = true;
-                    musicBtn.classList.remove('needs-interaction');
-                    musicIcon.classList.add('music-playing');
-                    document.body.classList.add('beat-active');
-                }).catch(e => console.log('Playback failed:', e));
+
+                const playPromise = music.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        isPlaying = true;
+                        musicBtn.classList.remove('needs-interaction');
+                        musicIcon.classList.add('music-playing');
+                        document.body.classList.add('beat-active');
+                    }).catch(e => console.log('Playback failed:', e));
+                }
             }
         }
 
@@ -576,7 +686,8 @@
             if (!ctx) return;
 
             let particles = [];
-            const particleCount = 60;
+            // Reduce particles on mobile for better performance
+            const particleCount = isMobile ? 30 : 60;
             const colors = ['#f43f5e', '#fbbf24', '#fdf2f8', '#ffffff', '#e2e8f0'];
             let mouse = { x: -1000, y: -1000 };
 
@@ -684,15 +795,60 @@
         document.addEventListener('DOMContentLoaded', function() {
             triggerConfetti();
 
-            // Try to autoplay music (will likely fail on mobile, but worth trying)
-            music.play().then(() => {
-                isPlaying = true;
-                musicIcon.classList.add('music-playing');
-            }).catch(() => {
-                // Autoplay blocked - show pulse animation to indicate tap needed
+            // On mobile, always show the pulse indicator since autoplay won't work
+            if (isMobile) {
                 musicBtn.classList.add('needs-interaction');
-            });
+            } else {
+                // Try to autoplay music on desktop
+                const playPromise = music.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        setupAudioAnalyser();
+                        isPlaying = true;
+                        musicIcon.classList.add('music-playing');
+                        document.body.classList.add('beat-active');
+                    }).catch(() => {
+                        // Autoplay blocked - show pulse animation to indicate tap needed
+                        musicBtn.classList.add('needs-interaction');
+                    });
+                }
+            }
         });
+
+        // Unlock audio on first touch (iOS requirement)
+        let audioUnlocked = false;
+        function unlockAudio() {
+            if (audioUnlocked) return;
+
+            // Create and play a silent buffer to unlock audio
+            if (!audioContext) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioContext = new AudioContext();
+            }
+
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
+            // Also "touch" the audio element
+            music.load();
+
+            audioUnlocked = true;
+        }
+
+        // Listen for first interaction to unlock audio
+        document.addEventListener('touchstart', unlockAudio, { once: true });
+        document.addEventListener('touchend', unlockAudio, { once: true });
+        document.addEventListener('click', unlockAudio, { once: true });
+
+        // Prevent pull-to-refresh on mobile
+        document.body.addEventListener('touchmove', function(e) {
+            if (e.target.closest('.page')) {
+                // Allow scrolling within pages
+            } else {
+                e.preventDefault();
+            }
+        }, { passive: false });
     </script>
 </body>
 </html>
