@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Happy Birthday Shantel!</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.4/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Inter:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -25,27 +25,437 @@
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
-        @keyframes float {
-            0% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-20px) rotate(5deg); }
-            100% { transform: translateY(0px) rotate(0deg); }
+
+        /* Page transitions */
+        .page {
+            display: none;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.7s ease, transform 0.7s ease;
         }
+        .page.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .page.exit {
+            opacity: 0;
+            transform: translateY(-30px) scale(0.95);
+        }
+
+        /* Floating animations */
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+            25% { opacity: 0.4; }
+            50% { transform: translateY(-40px) rotate(45deg); opacity: 0.4; }
+            75% { opacity: 0.4; }
+            100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+        }
+
+        @keyframes gentleRotate {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(10deg); }
+            75% { transform: rotate(-10deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        .floating-shape {
+            animation: float 12s ease-in-out infinite;
+        }
+        .floating-shape:nth-child(2) { animation-delay: 4s; animation-duration: 14s; }
+        .floating-shape:nth-child(3) { animation-delay: 2s; animation-duration: 16s; }
+        .floating-shape:nth-child(4) { animation-delay: 6s; animation-duration: 10s; }
+        .floating-shape:nth-child(5) { animation-delay: 1s; animation-duration: 18s; }
+
+        .gentle-rotate {
+            animation: gentleRotate 4s ease-in-out infinite;
+        }
+
+        /* Interactive hover effects */
+        .interactive {
+            transition: transform 0.2s ease-out;
+        }
+        .interactive:hover {
+            transform: scale(1.02) translateY(-4px);
+        }
+        .interactive:active {
+            transform: scale(0.98);
+        }
+
+        /* Fade in animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.8s ease-out forwards;
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        .delay-200 { animation-delay: 0.2s; opacity: 0; }
+        .delay-300 { animation-delay: 0.3s; opacity: 0; }
+        .delay-400 { animation-delay: 0.4s; opacity: 0; }
+        .delay-500 { animation-delay: 0.5s; opacity: 0; }
+        .delay-600 { animation-delay: 0.6s; opacity: 0; }
+        .delay-1200 { animation-delay: 1.2s; opacity: 0; }
+        .delay-1500 { animation-delay: 1.5s; opacity: 0; }
+
+        /* Wish card stagger */
+        .wish-card:nth-child(1) { animation-delay: 0.3s; }
+        .wish-card:nth-child(2) { animation-delay: 0.4s; }
+        .wish-card:nth-child(3) { animation-delay: 0.5s; }
+        .wish-card:nth-child(4) { animation-delay: 0.6s; }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "react": "https://esm.sh/react@^19.2.4",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "framer-motion": "https://esm.sh/framer-motion@^12.29.2",
-    "canvas-confetti": "https://esm.sh/canvas-confetti@^1.9.4"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
 </head>
 <body class="bg-[#faf9f6]">
-    <div id="root"></div>
-<script type="module" src="/index.tsx"></script>
+    <!-- Background Decoration -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="absolute inset-0 bg-gradient-to-br from-[#faf9f6] via-rose-50/30 to-amber-50/20"></div>
+
+        <!-- Modern gradient blobs -->
+        <div class="absolute top-[-15%] right-[-10%] w-[60%] h-[60%] bg-rose-200/20 blur-[140px] rounded-full"></div>
+        <div class="absolute bottom-[-15%] left-[-15%] w-[50%] h-[50%] bg-amber-100/20 blur-[120px] rounded-full"></div>
+
+        <!-- Floating shapes -->
+        <div class="floating-shape fixed pointer-events-none rounded-3xl bg-rose-100/30 w-32 h-32 backdrop-blur-[4px] shadow-sm" style="left: 8%; top: 12%;"></div>
+        <div class="floating-shape fixed pointer-events-none rounded-3xl bg-amber-100/30 w-24 h-24 backdrop-blur-[4px] shadow-sm" style="left: 82%; top: 18%;"></div>
+        <div class="floating-shape fixed pointer-events-none rounded-3xl bg-slate-200/20 w-44 h-44 backdrop-blur-[4px] shadow-sm" style="left: 72%; top: 65%;"></div>
+        <div class="floating-shape fixed pointer-events-none rounded-3xl bg-rose-200/15 w-20 h-20 backdrop-blur-[4px] shadow-sm" style="left: 12%; top: 78%;"></div>
+        <div class="floating-shape fixed pointer-events-none rounded-3xl bg-slate-800/5 w-64 h-64 backdrop-blur-[4px] shadow-sm" style="left: 45%; top: 40%;"></div>
+
+        <!-- Particle canvas -->
+        <canvas id="particleCanvas" class="absolute inset-0 opacity-60 mix-blend-multiply"></canvas>
+    </div>
+
+    <!-- Main Content Container -->
+    <div class="relative w-full h-screen overflow-hidden flex items-center justify-center selection:bg-rose-200">
+
+        <!-- Intro Page -->
+        <div id="introPage" class="page active z-10 w-full px-4">
+            <div class="max-w-4xl mx-auto text-center px-6">
+                <div class="mb-6 inline-block uppercase tracking-[0.4em] text-rose-400 font-bold text-sm animate-fade-in-up delay-200">
+                    The Golden 31st Celebration
+                </div>
+
+                <div class="interactive mb-8 block">
+                    <h1 class="serif text-6xl md:text-9xl font-bold text-slate-800 leading-[0.9] mb-4 animate-fade-in-up delay-300">
+                        Shantel<br>
+                        <span class="text-rose-500 italic">McNeal</span>
+                    </h1>
+                </div>
+
+                <div class="mb-12 animate-fade-in delay-600">
+                    <span class="cursive text-4xl md:text-5xl text-amber-600">January 31st &bull; Turning 31</span>
+                    <p class="text-slate-500 mt-4 text-lg md:text-xl font-light max-w-2xl mx-auto leading-relaxed">
+                        Turning 31 on the 31st? That's not just a birthday, it's a <strong>Calendar Jackpot!</strong>
+                        The universe clearly marked this date just for you. Now that's what we call a Golden Birthday!
+                    </p>
+                </div>
+
+                <div class="flex flex-col items-center justify-center gap-6">
+                    <div class="interactive">
+                        <button onclick="navigateTo('wishes')" class="px-12 py-5 bg-slate-900 text-white rounded-full font-bold text-sm uppercase tracking-widest shadow-2xl hover:bg-slate-800 transition-all active:scale-95 flex items-center gap-4">
+                            Explore the Year Ahead
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-20 flex justify-center gap-12 opacity-30 grayscale items-center animate-fade-in delay-1200">
+                    <span class="text-2xl font-bold">31</span>
+                    <span class="text-2xl">&#10022;</span>
+                    <span class="text-2xl uppercase tracking-tighter">January</span>
+                    <span class="text-2xl">&#10022;</span>
+                    <span class="text-2xl font-bold">31</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wishes Page -->
+        <div id="wishesPage" class="page z-10 w-full px-4">
+            <div class="max-w-5xl mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h2 class="serif text-4xl md:text-5xl font-bold text-slate-800 mb-4 animate-fade-in-up">
+                        Our Wishes for You
+                    </h2>
+                    <div class="h-1 w-20 bg-rose-400 mx-auto rounded-full"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+                    <div class="interactive wish-card glass p-8 rounded-2xl h-full flex flex-col items-center text-center group hover:border-rose-300 transition-colors opacity-0 animate-fade-in-up">
+                        <div class="text-4xl mb-6 transform group-hover:scale-125 transition-transform duration-500">&#128200;</div>
+                        <h3 class="font-bold text-slate-800 text-lg mb-3 tracking-wide uppercase">Success</h3>
+                        <p class="text-slate-500 font-light leading-relaxed text-sm">
+                            May this year bring unprecedented growth and professional milestones.
+                        </p>
+                    </div>
+                    <div class="interactive wish-card glass p-8 rounded-2xl h-full flex flex-col items-center text-center group hover:border-rose-300 transition-colors opacity-0 animate-fade-in-up">
+                        <div class="text-4xl mb-6 transform group-hover:scale-125 transition-transform duration-500">&#10024;</div>
+                        <h3 class="font-bold text-slate-800 text-lg mb-3 tracking-wide uppercase">Joy</h3>
+                        <p class="text-slate-500 font-light leading-relaxed text-sm">
+                            Endless moments of laughter with the ones you love most.
+                        </p>
+                    </div>
+                    <div class="interactive wish-card glass p-8 rounded-2xl h-full flex flex-col items-center text-center group hover:border-rose-300 transition-colors opacity-0 animate-fade-in-up">
+                        <div class="text-4xl mb-6 transform group-hover:scale-125 transition-transform duration-500">&#127807;</div>
+                        <h3 class="font-bold text-slate-800 text-lg mb-3 tracking-wide uppercase">Health</h3>
+                        <p class="text-slate-500 font-light leading-relaxed text-sm">
+                            A year of strength, vitality, and mindful peace.
+                        </p>
+                    </div>
+                    <div class="interactive wish-card glass p-8 rounded-2xl h-full flex flex-col items-center text-center group hover:border-rose-300 transition-colors opacity-0 animate-fade-in-up">
+                        <div class="text-4xl mb-6 transform group-hover:scale-125 transition-transform duration-500">&#127758;</div>
+                        <h3 class="font-bold text-slate-800 text-lg mb-3 tracking-wide uppercase">Adventure</h3>
+                        <p class="text-slate-500 font-light leading-relaxed text-sm">
+                            New horizons to explore and beautiful memories to create.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col md:flex-row items-center justify-center gap-6">
+                    <button onclick="navigateTo('intro')" class="px-8 py-3 text-slate-400 font-medium hover:text-slate-600 transition-colors active:scale-95">
+                        Go Back
+                    </button>
+                    <div class="interactive">
+                        <button onclick="navigateTo('outro')" class="px-10 py-4 bg-rose-500 text-white rounded-full font-bold shadow-xl hover:shadow-rose-200 transition-all active:scale-95">
+                            Continue Celebration
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Outro/Closing Page -->
+        <div id="outroPage" class="page z-10 w-full px-4">
+            <div class="max-w-3xl mx-auto text-center px-6">
+                <div class="glass p-12 md:p-20 rounded-[3rem] shadow-2xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+                        <svg width="100" height="100" viewBox="0 0 100 100" fill="currentColor" class="text-rose-500">
+                            <path d="M50 0 L100 50 L50 100 L0 50 Z" />
+                        </svg>
+                    </div>
+
+                    <div class="interactive mb-10 inline-block">
+                        <div class="gentle-rotate w-24 h-24 bg-gradient-to-tr from-rose-100 to-amber-100 rounded-3xl flex items-center justify-center text-5xl mx-auto border border-white/50 shadow-sm">
+                            &#10024;
+                        </div>
+                    </div>
+
+                    <h2 class="serif text-5xl md:text-6xl font-bold text-slate-800 mb-8 animate-fade-in-up delay-300">
+                        Level 31 Unlocked.
+                    </h2>
+
+                    <div class="space-y-6 text-slate-500 text-lg font-light leading-relaxed max-w-lg mx-auto animate-fade-in delay-600">
+                        <p>
+                            Shantel, they say 31 is a prime age, but celebrating it on the 31st makes it a <span class="text-amber-600 font-semibold italic">Masterpiece Year.</span>
+                        </p>
+                        <p>
+                            As you step into this perfectly aligned year, may your path be clear, your heart be full, and your calendar always stay this organized.
+                        </p>
+                        <p class="font-semibold text-rose-500 italic serif text-2xl">
+                            Enjoy every second of your special day!
+                        </p>
+                    </div>
+
+                    <div class="mt-12">
+                        <div class="interactive inline-block">
+                            <button onclick="navigateTo('wishes')" class="text-slate-400 uppercase tracking-widest text-xs font-bold border-b border-transparent hover:border-slate-300 transition-all py-2">
+                                Return to Wishes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-12 text-slate-400 font-light italic animate-fade-in delay-1500" style="opacity: 0.5;">
+                    "31 on the 31st... You've officially achieved maximum calendar efficiency."
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="absolute bottom-6 left-6 text-slate-400 text-[10px] font-semibold uppercase tracking-[0.3em] pointer-events-none">
+            Exclusively Crafted for Shantel McNeal
+        </div>
+    </div>
+
+    <script>
+        // Page Navigation
+        function navigateTo(page) {
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(p => {
+                p.classList.remove('active');
+            });
+
+            setTimeout(() => {
+                const targetPage = document.getElementById(page + 'Page');
+                if (targetPage) {
+                    targetPage.classList.add('active');
+
+                    // Trigger confetti on intro and outro pages
+                    if (page === 'intro' || page === 'outro') {
+                        triggerConfetti();
+                    }
+                }
+            }, 100);
+        }
+
+        // Confetti Effect
+        function triggerConfetti() {
+            const duration = 3000;
+            const animationEnd = Date.now() + duration;
+            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+            function randomInRange(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            const interval = setInterval(function() {
+                const timeLeft = animationEnd - Date.now();
+
+                if (timeLeft <= 0) {
+                    return clearInterval(interval);
+                }
+
+                const particleCount = 50 * (timeLeft / duration);
+                confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+                confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+            }, 250);
+        }
+
+        // Particle System
+        (function initParticles() {
+            const canvas = document.getElementById('particleCanvas');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            let particles = [];
+            const particleCount = 60;
+            const colors = ['#f43f5e', '#fbbf24', '#fdf2f8', '#ffffff', '#e2e8f0'];
+            let mouse = { x: -1000, y: -1000 };
+
+            class Particle {
+                constructor() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.size = Math.random() * 4 + 1;
+                    this.baseX = this.x;
+                    this.baseY = this.y;
+                    this.density = (Math.random() * 30) + 1;
+                    this.color = colors[Math.floor(Math.random() * colors.length)];
+                    this.angle = Math.random() * 360;
+                    this.spin = Math.random() * 0.2 - 0.1;
+                }
+
+                draw() {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(this.angle * Math.PI / 180);
+                    ctx.fillStyle = this.color;
+                    ctx.globalAlpha = 0.4;
+
+                    if (this.density > 15) {
+                        ctx.beginPath();
+                        ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else {
+                        ctx.fillRect(-this.size, -this.size, this.size * 2, this.size * 2);
+                    }
+
+                    ctx.restore();
+                }
+
+                update() {
+                    this.y += 0.2;
+                    this.angle += this.spin;
+
+                    if (this.y > canvas.height) {
+                        this.y = -10;
+                        this.x = Math.random() * canvas.width;
+                    }
+
+                    let dx = mouse.x - this.x;
+                    let dy = mouse.y - this.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    let forceDirectionX = dx / distance;
+                    let forceDirectionY = dy / distance;
+                    let maxDistance = 150;
+                    let force = (maxDistance - distance) / maxDistance;
+                    let directionX = forceDirectionX * force * this.density;
+                    let directionY = forceDirectionY * force * this.density;
+
+                    if (distance < maxDistance) {
+                        this.x -= directionX;
+                        this.y -= directionY;
+                    } else {
+                        if (this.x !== this.baseX) {
+                            let dxReturn = this.x - this.baseX;
+                            this.x -= dxReturn / 100;
+                        }
+                    }
+                }
+            }
+
+            function init() {
+                particles = [];
+                for (let i = 0; i < particleCount; i++) {
+                    particles.push(new Particle());
+                }
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (let i = 0; i < particles.length; i++) {
+                    particles[i].update();
+                    particles[i].draw();
+                }
+                requestAnimationFrame(animate);
+            }
+
+            function handleResize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                init();
+            }
+
+            window.addEventListener('resize', handleResize);
+            window.addEventListener('mousemove', (e) => {
+                mouse.x = e.x;
+                mouse.y = e.y;
+            });
+            window.addEventListener('touchmove', (e) => {
+                if (e.touches[0]) {
+                    mouse.x = e.touches[0].clientX;
+                    mouse.y = e.touches[0].clientY;
+                }
+            });
+
+            handleResize();
+            animate();
+        })();
+
+        // Initial confetti on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            triggerConfetti();
+        });
+    </script>
 </body>
 </html>
